@@ -2,9 +2,10 @@ version: '3.8'
 
 services:
 
-# ===========================================
-# Backend Microservicios
-# ===========================================
+  # ===========================================
+  # Backend Microservicios
+  # ===========================================
+
   auth-service:
     build: ./backend/auth-service
     container_name: auth-service
@@ -79,10 +80,10 @@ services:
       MYSQL_DATABASE: users_db
     networks:
       - mynetwork
-  
-# ===========================================
-# Base de datos MySQL
-# ===========================================
+
+  # ===========================================
+  # Base de datos MySQL
+  # ===========================================
 
   db:
     image: mysql:8.0
@@ -98,23 +99,23 @@ services:
     networks:
       - mynetwork
 
-# ===========================================
-# Frontend
-# ===========================================
+  # ===========================================
+  # Frontend
+  # ===========================================
 
-frontend:
-  build: ./frontend
-  container_name: frontend-app
-  ports:
-    - "3000:3000"
-  depends_on:
-    - auth-service
-    - booking-service
-    - payment-service
-    - reservation-service
-    - workshops-service
-  networks:
-    - mynetwork
+  frontend:
+    build: ./frontend
+    container_name: frontend-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - booking-service
+      - payment-service
+      - reservation-service
+      - workshops-service
+    networks:
+      - mynetwork
 
 # ===========================================
 # Red de Docker
