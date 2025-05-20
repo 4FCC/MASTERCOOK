@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 
 # Orígenes permitidos para CORS
-origins = ["http://localhost:5173"]
+origins = ["http://localhost:3000"]
 
 # Configuración de CORS
 app.add_middleware(
