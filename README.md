@@ -5,9 +5,15 @@ Este es un proyecto de ...
 ## docker-compose
 
 ```bash
+    # Activar
     docker-compose up --build
+```
+
+```bash
+    # Apagar
+    docker-compose down # O solo preciona "ctrol + c" en la terminal
 ```
 
 ## NOTA IMPORTANTE
 
-El docker del frontend aun no esta implementado, asi que tambien hay que arreglar su llamada en el docker-compose.
+Los docker ya estan configurados, no tocarlos porfa.
