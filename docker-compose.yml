@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+
+# ===========================================
+# Backend Microservicios
+# ===========================================
+  auth-service:
+    build: ./backend/auth-service
+    container_name: auth-service
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    networks:
+      - mynetwork
+
+  booking-service:
+    build: ./backend/booking-service
+    container_name: booking-service
+    ports:
+      - "5002:5000"
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    networks:
+      - mynetwork
+
+  payment-service:
+    build: ./backend/payment-service
+    container_name: payment-service
+    ports:
+      - "5003:5000"
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    networks:
+      - mynetwork
+
+  reservation-service:
+    build: ./backend/reservation-service
+    container_name: reservation-service
+    ports:
+      - "5004:5000"
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    networks:
+      - mynetwork
+
+  workshops-service:
+    build: ./backend/workshops-service
+    container_name: workshops-service
+    ports:
+      - "5005:5000"
+    depends_on:
+      - db
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    networks:
+      - mynetwork
+  
+# ===========================================
+# Base de datos MySQL
+# ===========================================
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: users_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - mynetwork
+
+# ===========================================
+# Frontend
+# ===========================================
+
+frontend:
+  build: ./frontend
+  container_name: frontend-app
+  ports:
+    - "3000:3000"
+  depends_on:
+    - auth-service
+    - booking-service
+    - payment-service
+    - reservation-service
+    - workshops-service
+  networks:
+    - mynetwork
+
+# ===========================================
+# Red de Docker
+# ===========================================
+
+networks:
+  mynetwork:
+    driver: bridge
