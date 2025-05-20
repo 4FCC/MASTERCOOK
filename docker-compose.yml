@@ -116,6 +116,8 @@ services:
       - workshops-service
     networks:
       - mynetwork
+    restart: unless-stopped
+
 
 # ===========================================
 # Red de Docker

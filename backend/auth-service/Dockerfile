@@ -8,7 +8,7 @@ WORKDIR /app
 # Instalar dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Exponer el puerto usado por uvicorn
+# Exponer puerto para uvicorn
 EXPOSE 5000
 
 # Correr la aplicación FastAPI en el puerto 5000
