@@ -11,7 +11,12 @@ Este es un proyecto de ...
 
 ```bash
     # Apagar
-    docker-compose down # O solo preciona "ctrol + c" en la terminal
+    docker-compose down -v
+```
+
+```bash
+    # Borrar las imagenes de docker en caso de error
+    docker system prune -a
 ```
 
 ## NOTA IMPORTANTE

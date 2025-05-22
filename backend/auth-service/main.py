@@ -1,59 +1,149 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr, Field, validator
 import mysql.connector
-from fastapi.responses import JSONResponse
+import bcrypt
+import time
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
 
-# Inicialización de la aplicación FastAPI
-app = FastAPI()
+# --- CONFIGURACIÓN JWT ---
+SECRET_KEY = "supersecreto-pacheco-2025"  # 🔐 ¡cambiar en producción!
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Orígenes permitidos para CORS
-origins = ["http://localhost:3000"]
+# --- APP INIT ---
+app = FastAPI(title="Auth Service", version="2.0")
 
-# Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Modelo de datos para el login
-class LoginData(BaseModel):
-    username: str
-    password: str
+# --- MODELOS ---
+class RegisterData(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
 
-# Ruta de prueba
-@app.post("/api/v0/hello")
-async def hello_world():
-    return {"message": "Hello World"}
+    @validator("password")
+    def password_strength(cls, v):
+        if not any(c.isupper() for c in v) or not any(c.islower() for c in v) or not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe tener al menos una mayúscula, una minúscula y un número.")
+        return v
 
-# Ruta de login
-@app.post("/login")
-async def login(data: LoginData):
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+# --- DB CONEXIÓN CON RETRY ---
+def get_connection():
+    for attempt in range(20):
+        try:
+            return mysql.connector.connect(
+                host="db",
+                user="root",
+                password="12345",
+                database="users_db"
+            )
+        except mysql.connector.Error:
+            print(f"[auth-service] Intento {attempt+1} fallido, esperando...")
+            time.sleep(3)
+    raise Exception("No se pudo conectar a la base de datos.")
+
+# --- INICIALIZACIÓN DE TABLA ---
+@app.on_event("startup")
+def create_table():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            email VARCHAR(100) UNIQUE,
+            password VARCHAR(255)
+        )
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+# --- UTILIDADES JWT ---
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_token(token: str = Depends(oauth2_scheme)):
     try:
-        # Conexión a la base de datos
-        db = mysql.connector.connect(
-            host="db",  # o "localhost" si no está en contenedor
-            user="root",
-            password="12345",
-            database="users_db"
-        )
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido")
 
-        cursor = db.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT * FROM users WHERE username=%s AND password=%s",
-            (data.username, data.password)
-        )
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
+# --- REGISTRO ---
+@app.post("/api/auth/register", summary="Registrar un nuevo usuario")
+def register_user(data: RegisterData):
+    hashed = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = %s", (data.email,))
+    if cursor.fetchone():
+        raise HTTPException(status_code=409, detail="Correo ya registrado")
+    cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+                   (data.name, data.email, hashed))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"message": "Usuario registrado exitosamente"}
 
-        if user:
-            return {"message": "Login exitoso"}
-        else:
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+# --- LOGIN (con JWT) ---
+@app.post("/api/auth/login", response_model=Token, summary="Iniciar sesión y obtener token")
+def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users WHERE email = %s", (form_data.username,))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
 
-    except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+    if not user or not bcrypt.checkpw(form_data.password.encode(), user["password"].encode()):
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    
+    token = create_access_token({"sub": user["email"]})
+    return {"access_token": token, "token_type": "bearer"}
+
+# --- LOGOUT SIMULADO (frontend-side) ---
+@app.post("/api/auth/logout", summary="Cerrar sesión (simulado)")
+def logout():
+    return {"message": "Logout exitoso. Elimina el token en el cliente."}
+
+# --- RUTA PROTEGIDA (ejemplo) ---
+@app.get("/api/auth/profile", response_model=UserOut, summary="Obtener perfil del usuario autenticado")
+def get_profile(token_data=Depends(verify_token)):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, name, email FROM users WHERE email = %s", (token_data["sub"],))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
+
+# --- Health check ---
+@app.get("/api/auth/health", summary="Verifica si el microservicio está activo")
+def health():
+    return {"status": "auth-service ok"}

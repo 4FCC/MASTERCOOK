@@ -1,2 +1,5 @@
 fastapi[all]
 mysql-connector-python
+bcrypt
+python-jose[cryptography]
+passlib[bcrypt]
