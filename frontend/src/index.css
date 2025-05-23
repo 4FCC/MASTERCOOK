@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -65,4 +69,26 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+@tailwind.config.js
+module.exports = {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}", // ajusta según tu estructura
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Paleta de MasterCook Academy
+        'salsa-tomato': '#D94F4F',      // Primario
+        'creamy-vanilla': '#FFF3E2',    // Secundario
+        'olive-green': '#6B8E23',       // Acento
+        'charcoal-gray': '#333333',     // Texto Principal
+        'ash-gray': '#666666',          // Texto Secundario
+        'snow-white': '#FAFAFA',        // Fondo claro
+      },
+    },
+  },
+  plugins: [],
 }
