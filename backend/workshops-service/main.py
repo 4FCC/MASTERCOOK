@@ -1,4 +1,5 @@
 
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
@@ -7,7 +8,7 @@ import mysql.connector
 import time
 from datetime import date, datetime
 
-app = FastAPI(title="Workshops Service", version="1.1")
+app = FastAPI(title="Workshops Service", version="1.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +24,7 @@ class WorkshopCreate(BaseModel):
     category: str
     date: date
     max_participants: int = Field(..., gt=0)
+    price: float = Field(..., gt=0)
 
     @validator("date")
     def validar_fecha(cls, v):
@@ -38,6 +40,7 @@ class Workshop(BaseModel):
     date: date
     max_participants: int
     current_participants: int
+    price: float
 
 def get_connection():
     for attempt in range(20):
@@ -65,7 +68,8 @@ def create_table():
             category VARCHAR(50),
             date DATE,
             max_participants INT,
-            current_participants INT DEFAULT 0
+            current_participants INT DEFAULT 0,
+            price DECIMAL(10,2) NOT NULL DEFAULT 0.00
         )
     """)
     conn.commit()
@@ -84,9 +88,9 @@ def crear_taller(data: WorkshopCreate):
         raise HTTPException(status_code=409, detail="Ya existe un taller con este título")
 
     cursor.execute("""
-        INSERT INTO workshops (title, description, category, date, max_participants)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (data.title, data.description, data.category, data.date, data.max_participants))
+        INSERT INTO workshops (title, description, category, date, max_participants, price)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (data.title, data.description, data.category, data.date, data.max_participants, data.price))
     conn.commit()
 
     cursor.execute("SELECT * FROM workshops WHERE title = %s", (data.title,))
