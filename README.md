@@ -1,24 +1,26 @@
-# MasterCook
+# MasterCook – Microservicio Modular con FastAPI + Docker
 
-Este es un proyecto de ...
+Este proyecto es una plataforma modular construida con microservicios en FastAPI y Docker, orientada a la gestión de usuarios, reservas y talleres gastronómicos.
 
-## docker-compose
+## Levantar el Proyecto
 
-```bash
-    # Activar
-    docker-compose up --build
+```
+# Iniciar todos los contenedores
+docker-compose up --build
 ```
 
-```bash
-    # Apagar
-    docker-compose down -v
+```
+# Apagar todo y eliminar volúmenes persistentes
+docker-compose down -v
 ```
 
-```bash
-    # Borrar las imagenes de docker en caso de error
-    docker system prune -a
+```
+# Borrar imágenes, redes y contenedores (CUIDADO)
+docker system prune -a
 ```
 
-## NOTA IMPORTANTE
+## Notas Importantes
 
-Los docker ya estan configurados, no tocarlos porfa.
+- Los Dockerfile y la configuración de docker-compose ya están completamente funcionales.
+- No modificar configuraciones de red, puertos ni dependencias internas sin coordinación.
+- Si hay cambios en la base de datos, recuerda actualizar también los scripts de inicialización.
