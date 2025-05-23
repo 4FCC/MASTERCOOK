@@ -52,17 +52,21 @@ services:
       - mynetwork
 
   reservation-service:
-    build: ./backend/reservation-service
-    container_name: reservation-service
+    build: ./API_GATEWAY
+    container_name: api_gateway
     ports:
       - "5004:5000"
     depends_on:
-      - db
+      depends_on:
+      - auth-service
+      - booking-service
+      - payment-service
+      - workshops-service
     environment:
-      MYSQL_HOST: db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 12345
-      MYSQL_DATABASE: users_db
+      AUTH_URL:      "http://auth-service:5000"
+      BOOKING_URL:   "http://booking-service:5000"
+      PAYMENT_URL:   "http://payment-service:5000"
+      WORKSHOPS_URL: "http://workshops-service:5000"
     networks:
       - mynetwork
 
